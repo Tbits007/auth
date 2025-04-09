@@ -32,7 +32,6 @@ func main() {
         cfg.Postgres.Port,
         cfg.Postgres.DBName,
 	)
-	
 	// storage
 	// services
 	// handlers
