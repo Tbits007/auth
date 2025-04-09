@@ -3,7 +3,7 @@ package models
 import "github.com/google/uuid"
 
 
-type OutboxMessage struct {
+type Event struct {
 	ID 			 uuid.UUID 
 	AggregateID  uuid.UUID 
 	EventType    string

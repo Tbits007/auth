@@ -2,23 +2,29 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 
 	"github.com/Tbits007/auth/internal/domain/models"
 	"github.com/Tbits007/auth/internal/storage"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type UserRepo struct {
-	db *sql.DB
+	db *pgxpool.Pool
+}
+
+func NewUserRepo(db *pgxpool.Pool) *UserRepo {
+	return &UserRepo{
+		db: db,
+	}
 }
 
 func (u *UserRepo) Save(
 	ctx context.Context,
-	tx *sql.Tx,
 	user models.User,
 ) (uuid.UUID, error) {
 	const op = "postgres.userRepo.Save"
@@ -28,20 +34,17 @@ func (u *UserRepo) Save(
 	VALUES ($1, $2)
 	RETURNING id
 	`
+
 	var id uuid.UUID
     var err error
 
-	if tx != nil {
-        err = tx.QueryRowContext(ctx, query,
-            user.Email,
-            user.HashedPassword,
-        ).Scan(&id)
-    } else {
-        err = u.db.QueryRowContext(ctx, query,
-            user.Email,
-            user.HashedPassword,
-        ).Scan(&id)
-    }
+    querier := GetQuerier(ctx, u.db)
+
+    err = querier.QueryRow(ctx, query,
+        user.Email,
+        user.HashedPassword,
+    ).Scan(&id)
+
 
     if err != nil {
         var pgErr *pgconn.PgError
@@ -68,14 +71,15 @@ func (u *UserRepo) GetByID(
 	`
 
     var user models.User
-    err := u.db.QueryRowContext(ctx, query, userID).Scan(
+    querier := GetQuerier(ctx, u.db)
+    err := querier.QueryRow(ctx, query, userID).Scan(
         &user.Email,
         &user.HashedPassword,
         &user.IsAdmin,
     )
 
     switch {
-    case errors.Is(err, sql.ErrNoRows):
+    case errors.Is(err,  pgx.ErrNoRows):
         return nil, fmt.Errorf("%s: user not found: %w", op, storage.ErrUserNotFound)
     case err != nil:
         return nil, fmt.Errorf("%s: failed to get user by ID: %w", op, err)
@@ -98,12 +102,13 @@ func (u *UserRepo) IsAdmin(
 	`
 
     var isAdmin bool
-    err := u.db.QueryRowContext(ctx, query, userID).Scan(
+    querier := GetQuerier(ctx, u.db)
+    err := querier.QueryRow(ctx, query, userID).Scan(
         &isAdmin,
     )
 
     switch {
-    case errors.Is(err, sql.ErrNoRows):
+    case errors.Is(err, pgx.ErrNoRows):
         return false, fmt.Errorf("%s: user not found: %w", op, storage.ErrUserNotFound)
     case err != nil:
         return false, fmt.Errorf("%s: failed to get user by ID: %w", op, err)
