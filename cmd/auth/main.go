@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log/slog"
 	"os"
 
@@ -24,14 +23,14 @@ func main() {
     log.Info("initializing server", slog.String("address", cfg.HTTPServer.Address))
     log.Debug("logger debug mode enabled")
 
-	connStr := fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
-		cfg.Postgres.User,
-        cfg.Postgres.Password,
-        cfg.Postgres.Host,
-        cfg.Postgres.Port,
-        cfg.Postgres.DBName,
-	)
+	// connStr := fmt.Sprintf(
+	// 	"postgres://%s:%s@%s:%d/%s?sslmode=disable",
+	// 	cfg.Postgres.User,
+    //     cfg.Postgres.Password,
+    //     cfg.Postgres.Host,
+    //     cfg.Postgres.Port,
+    //     cfg.Postgres.DBName,
+	// )
 	// storage
 	// services
 	// handlers

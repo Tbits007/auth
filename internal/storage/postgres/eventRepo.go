@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Tbits007/auth/internal/domain/models"
+	"github.com/Tbits007/auth/internal/domain/models/eventModel"
 	"github.com/Tbits007/auth/internal/storage"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -24,13 +24,13 @@ func NewEventRepo(db *pgxpool.Pool) *EventRepo {
 
 func (u *EventRepo) Save(
 	ctx context.Context,
-	Event models.Event,
+	Event eventModel.Event,
 ) (uuid.UUID, error) {
 	const op = "postgres.eventRepo.Save"
 
 	query := `
-	INSERT INTO events (aggregate_id, event_type, payload, status)
-	VALUES ($1, $2, $3, $4)
+	INSERT INTO events (event_type, payload, status)
+	VALUES ($1, $2, $3)
 	RETURNING id
 	`
 
@@ -40,7 +40,6 @@ func (u *EventRepo) Save(
     querier := GetQuerier(ctx, u.db)
 
     err = querier.QueryRow(ctx, query,
-        Event.AggregateID,
         Event.EventType,
 		Event.Payload,
 		Event.Status,

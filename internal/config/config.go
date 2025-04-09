@@ -9,9 +9,15 @@ import (
 
 
 type Config struct {
-	Env         string     `yaml:"env" env-default:"dev"`
-	HTTPServer  HTTPServer `yaml:"http_server"`
-	Postgres    Postgres   `yaml:"postgres"`
+	Env         string     	  `yaml:"env" env-default:"dev"`
+	HTTPServer  HTTPServer 	  `yaml:"http_server"`
+	Postgres    Postgres   	  `yaml:"postgres"`
+	Auth	 	Auth 		  `yaml:"auth"`	
+}
+
+type Auth struct {
+	TokenTTL 	time.Duration `yaml:"tokenTTL"`	
+	SecretKey 	string		  `yaml:"secretKey"`
 }
 
 type HTTPServer struct {

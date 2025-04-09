@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Tbits007/auth/internal/domain/models"
+	"github.com/Tbits007/auth/internal/domain/models/userModel"
 	"github.com/Tbits007/auth/internal/storage"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -25,7 +25,7 @@ func NewUserRepo(db *pgxpool.Pool) *UserRepo {
 
 func (u *UserRepo) Save(
 	ctx context.Context,
-	user models.User,
+	user userModel.User,
 ) (uuid.UUID, error) {
 	const op = "postgres.userRepo.Save"
 
@@ -58,21 +58,21 @@ func (u *UserRepo) Save(
 } 
 
 
-func (u *UserRepo) GetByID(
+func (u *UserRepo) GetByEmail(
 	ctx context.Context,
-	userID uuid.UUID,
-) (*models.User, error) {
-	const op = "postgres.userRepo.GetByID"
+	email string,
+) (*userModel.User, error) {
+	const op = "postgres.userRepo.GetByEmail"
 
 	query := `
 	SELECT email, hashed_password, is_admin
 	FROM users
-	WHERE id = $1
+	WHERE email = $1
 	`
 
-    var user models.User
+    var user userModel.User
     querier := GetQuerier(ctx, u.db)
-    err := querier.QueryRow(ctx, query, userID).Scan(
+    err := querier.QueryRow(ctx, query, email).Scan(
         &user.Email,
         &user.HashedPassword,
         &user.IsAdmin,
@@ -82,7 +82,7 @@ func (u *UserRepo) GetByID(
     case errors.Is(err,  pgx.ErrNoRows):
         return nil, fmt.Errorf("%s: user not found: %w", op, storage.ErrUserNotFound)
     case err != nil:
-        return nil, fmt.Errorf("%s: failed to get user by ID: %w", op, err)
+        return nil, fmt.Errorf("%s: failed to get user by email: %w", op, err)
     default:
         return &user, nil
     }
