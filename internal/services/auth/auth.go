@@ -197,3 +197,26 @@ func (au *AuthService) Login(
 
     return token, nil	
 }
+
+func (au *AuthService) IsAdmin(
+	ctx   context.Context,
+	userID uuid.UUID,
+) (bool, error) {
+    const op = "AuthService.IsAdmin"
+
+    log := au.log.With(
+        slog.String("op", op),
+    )	
+
+	isAdmin, err := au.userRepo.IsAdmin(ctx, userID)
+	if err != nil {
+		if errors.Is(err, storage.ErrUserNotFound) {
+			log.Error("user not found", sl.Err(err))
+			return false, fmt.Errorf("%s: %w", op, ErrInvalidCredentials)
+		}
+		log.Error("failed to get user", sl.Err(err))
+		return false, fmt.Errorf("%s: %w", op, err)
+	}
+	
+	return isAdmin, nil
+}
