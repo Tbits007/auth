@@ -5,9 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/Tbits007/auth/internal/handlers/grpc/auth"
 	"github.com/Tbits007/auth/internal/lib/logger/sl"
@@ -94,7 +91,7 @@ func (ga *GRPCApp) Stop(shutdownCtx context.Context) {
         Info("stopping gRPC server", slog.Int("port", ga.port))
 
     done := make(chan struct{})
-    
+
     go func() {
         defer close(done)
         ga.gRPCServer.GracefulStop()
