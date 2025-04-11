@@ -25,15 +25,15 @@ func GetQuerier(ctx context.Context, db *pgxpool.Pool) Querier {
 	
 }
 type TxManager struct {
-	pool *pgxpool.Pool
+	db *pgxpool.Pool
 }
 
-func NewTxManager(pool *pgxpool.Pool) *TxManager {
-	return &TxManager{pool: pool}
+func NewTxManager(db *pgxpool.Pool) *TxManager {
+	return &TxManager{db: db}
 }
 
 func (tm *TxManager) WithTransaction(ctx context.Context, fn func(ctx context.Context) error) error {
-	tx, err := tm.pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
+	tx, err := tm.db.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)
 	}

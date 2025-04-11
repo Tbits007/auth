@@ -10,7 +10,7 @@ import (
 
 type Config struct {
 	Env         string     	  `yaml:"env" env-default:"dev"`
-	HTTPServer  HTTPServer 	  `yaml:"http_server"`
+	GRPCServer  GRPCServer 	  `yaml:"grpc_server"`
 	Postgres    Postgres   	  `yaml:"postgres"`
 	Auth	 	Auth 		  `yaml:"auth"`	
 }
@@ -20,12 +20,8 @@ type Auth struct {
 	SecretKey 	string		  `yaml:"secretKey"`
 }
 
-type HTTPServer struct {
-	Address     string        `yaml:"address" env-default:"localhost:8080"`
-	Timeout     time.Duration `yaml:"timeout" env-default:"5s"`
-	IdleTimeout time.Duration `yaml:"idle_timeout" env-default:"60s"`
-	User        string        `yaml:"user" env-required:"true"`
-    Password    string        `yaml:"password" env-required:"true"`
+type GRPCServer struct {  
+    Port    int           `yaml:"port"`  
 }
 
 type Postgres struct {
