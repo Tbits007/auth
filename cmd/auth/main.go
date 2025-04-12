@@ -14,6 +14,7 @@ import (
 	"github.com/Tbits007/auth/internal/config"
 	"github.com/Tbits007/auth/internal/lib/logger/sl"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 )
 
 const (
@@ -50,9 +51,21 @@ func main() {
 		os.Exit(1)
 	}
 
+	rdb := redis.NewClient(&redis.Options{
+		Addr:         cfg.Redis.Address,
+		Password:     cfg.Redis.Address,
+		DB:           cfg.Redis.DB,
+		Username:     cfg.Redis.User,
+		MaxRetries:   cfg.Redis.MaxRetries,
+		DialTimeout:  cfg.Redis.DialTimeout,
+		ReadTimeout:  cfg.Redis.Timeout,
+		WriteTimeout: cfg.Redis.Timeout,
+	})	
+
 	application := app.NewApp(
 		log,
 		db,
+		rdb,
 		cfg.Auth.SecretKey,
 		cfg.GRPCServer.Port,
 		cfg.Auth.TokenTTL,
@@ -63,10 +76,10 @@ func main() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
 	<-stop
-	gracefulShutdown(log, application, db)
+	gracefulShutdown(log, application, db, rdb)
 }
 
-func gracefulShutdown(log *slog.Logger, application *app.App, db *pgxpool.Pool) {
+func gracefulShutdown(log *slog.Logger, application *app.App, db *pgxpool.Pool, rdb *redis.Client) {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
 	defer cancel()
 	done := make(chan struct{})
@@ -74,7 +87,7 @@ func gracefulShutdown(log *slog.Logger, application *app.App, db *pgxpool.Pool) 
 	log.Info("starting graceful shutdown...")
 		
 	var wg sync.WaitGroup
-	wg.Add(2)
+	wg.Add(3)
 		
 	go func() {
 		defer wg.Done()
@@ -84,6 +97,11 @@ func gracefulShutdown(log *slog.Logger, application *app.App, db *pgxpool.Pool) 
 	go func() {
 		defer wg.Done()
 		db.Close()
+	}()
+
+	go func() {
+		defer wg.Done()
+		rdb.Close()
 	}()
 
     go func() {

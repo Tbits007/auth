@@ -8,12 +8,13 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/Tbits007/auth/internal/domain/models/userModel"
 	"github.com/Tbits007/auth/internal/domain/models/eventModel"
+	"github.com/Tbits007/auth/internal/domain/models/userModel"
 	"github.com/Tbits007/auth/internal/lib/jwt"
 	"github.com/Tbits007/auth/internal/lib/logger/sl"
 	"github.com/Tbits007/auth/internal/storage"
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -53,11 +54,26 @@ type TxManager interface {
 	) error
 }
 
+type CacheRepo interface {
+	Set(
+		ctx 	   context.Context,
+		key        string,
+		value 	   any, 
+		expiration time.Duration,
+	) error 
+
+	Get(
+		ctx context.Context,
+		key string,
+	) (string, error)		
+}
+
 type AuthService struct {
 	log       *slog.Logger
 	txManager  TxManager
 	userRepo   UserRepo
 	eventRepo  EventRepo
+	cacheRepo  CacheRepo
 	tokenTTL   time.Duration
 	secretKey  string
 }
@@ -67,6 +83,7 @@ func NewAuthService(
 	txManager TxManager,
 	userRepo  UserRepo,
 	eventRepo EventRepo,
+	cacheRepo CacheRepo,
 	tokenTTL  time.Duration,
 	secretKey  string,
 ) *AuthService {
@@ -75,6 +92,7 @@ func NewAuthService(
 		txManager: txManager,
 		userRepo:  userRepo,
 		eventRepo: eventRepo,
+		cacheRepo: cacheRepo,
 		tokenTTL:  tokenTTL,
 		secretKey: secretKey,
 	}
@@ -85,7 +103,7 @@ func (au *AuthService) Register(
 	ctx context.Context,
 	email string,
 	password string,
-	) (uuid.UUID, error) {
+) (uuid.UUID, error) {
 		const op = "AuthService.Register"
 
 		log := au.log.With(
@@ -152,6 +170,14 @@ func (au *AuthService) Login(
         slog.String("op", op),
     )
 
+	token, err := au.cacheRepo.Get(ctx, email)
+	if err != nil {
+		log.Debug("cache miss", sl.Err(err))
+	} else {
+		log.Debug("cache hit")
+		return token, nil
+	}
+
 	user, err := au.userRepo.GetByEmail(ctx, email)
 	if err != nil {
 		if errors.Is(err, storage.ErrUserNotFound) {
@@ -167,7 +193,7 @@ func (au *AuthService) Login(
         return "", fmt.Errorf("%s: %w", op, ErrInvalidCredentials)
     }	
 
-    token, err := jwt.NewToken(*user, au.tokenTTL, au.secretKey)
+    token, err = jwt.NewToken(*user, au.tokenTTL, au.secretKey)
     if err != nil {
         log.Error("failed to generate token", sl.Err(err))
         return "", fmt.Errorf("%s: %w", op, err)
@@ -195,6 +221,11 @@ func (au *AuthService) Login(
 		log.Error("failed to save event", sl.Err(err))
 	}
 
+	err = au.cacheRepo.Set(ctx, email, token, 1*time.Hour)
+	if err != nil {
+		log.Debug("failed to cache token", sl.Err(err))
+	}
+
     return token, nil	
 }
 
@@ -208,6 +239,21 @@ func (au *AuthService) IsAdmin(
         slog.String("op", op),
     )	
 
+    cacheVal, err := au.cacheRepo.Get(ctx, userID.String())
+    if err == nil {
+        log.Debug("cache hit")
+        switch cacheVal {
+        case "true":
+            return true, nil
+        case "false":
+            return false, nil
+        default:
+            log.Warn("invalid cache value", slog.String("value", cacheVal))
+        }
+    } else if !errors.Is(err, redis.Nil) {
+        log.Debug("cache error", sl.Err(err))
+    }
+
 	isAdmin, err := au.userRepo.IsAdmin(ctx, userID)
 	if err != nil {
 		if errors.Is(err, storage.ErrUserNotFound) {
@@ -218,5 +264,14 @@ func (au *AuthService) IsAdmin(
 		return false, fmt.Errorf("%s: %w", op, err)
 	}
 	
+    cacheValue := "false"
+    if isAdmin {
+        cacheValue = "true"
+    }
+
+    if err := au.cacheRepo.Set(ctx, userID.String(), cacheValue, 1*time.Hour); err != nil {
+        log.Warn("failed to cache admin status", sl.Err(err))
+    }
+
 	return isAdmin, nil
 }

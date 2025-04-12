@@ -12,6 +12,7 @@ type Config struct {
 	Env         string     	  `yaml:"env" env-default:"dev"`
 	GRPCServer  GRPCServer 	  `yaml:"grpc_server"`
 	Postgres    Postgres   	  `yaml:"postgres"`
+	Redis       Redis		  `yaml:"redis"`
 	Auth	 	Auth 		  `yaml:"auth"`	
 }
 
@@ -30,6 +31,16 @@ type Postgres struct {
 	User     string `yaml:"user" env-default:"postgres"`
 	Password string `yaml:"password" env-default:"postgres"`
 	DBName   string `yaml:"dbname" env-default:"postgres"`
+}
+
+type Redis struct {
+	Address     string        `yaml:"address"`
+	Password    string        `yaml:"password"`
+	User        string        `yaml:"user"`
+	DB          int           `yaml:"db"`
+	MaxRetries  int           `yaml:"max_retries"`
+	DialTimeout time.Duration `yaml:"dial_timeout"`
+	Timeout     time.Duration `yaml:"timeout"`
 }
 
 func MustLoad() *Config {
