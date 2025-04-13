@@ -8,6 +8,7 @@ import (
 
 	"github.com/Tbits007/auth/internal/handlers/grpc/auth"
 	"github.com/Tbits007/auth/internal/lib/logger/sl"
+    "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/ratelimit"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 	"google.golang.org/grpc"
@@ -29,6 +30,7 @@ type GRPCApp struct {
 
 func NewGRPCApp(
     log *slog.Logger, 
+    rateLimiter ratelimit.Limiter, 
     authService auth.AuthService, 
     port int,
 ) *GRPCApp {
@@ -48,6 +50,7 @@ func NewGRPCApp(
     gRPCServer := grpc.NewServer(grpc.ChainUnaryInterceptor(
         logging.UnaryServerInterceptor(InterceptorLogger(log), loggingOpts...),
         recovery.UnaryServerInterceptor(recoveryOpts...),   
+        ratelimit.UnaryServerInterceptor(rateLimiter),  
     ))
 
     auth.NewAuthServer(gRPCServer, authService)

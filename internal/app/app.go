@@ -5,9 +5,11 @@ import (
 	"time"
 
 	"github.com/Tbits007/auth/internal/app/grpcapp"
+	"github.com/Tbits007/auth/internal/lib/ratelimiter"
 	"github.com/Tbits007/auth/internal/services/auth"
 	"github.com/Tbits007/auth/internal/storage/postgres"
 	"github.com/Tbits007/auth/internal/storage/redis_"
+	"github.com/go-redis/redis_rate/v10"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 )
@@ -20,6 +22,7 @@ func NewApp(
 	log 	  *slog.Logger,
 	db 		  *pgxpool.Pool,
 	rdb		  *redis.Client,
+	rateLimit *redis_rate.Limiter,
 	secretKey  string,
 	grpcPort   int,
 	tokenTTL   time.Duration,
@@ -29,7 +32,7 @@ func NewApp(
 	userRepo := postgres.NewUserRepo(db)
 	eventRepo := postgres.NewEventRepo(db)
 	cacheRepo := redis_.NewCacheRepo(rdb)
-
+	rateLimiter := ratelimiter.NewLimiter(rateLimit)
 	authService := auth.NewAuthService(
 		log,
 		txManager,
@@ -42,6 +45,7 @@ func NewApp(
 
 	grpcApp := grpcapp.NewGRPCApp(
 		log,
+		rateLimiter,
 		authService,
 		grpcPort,
 	)
