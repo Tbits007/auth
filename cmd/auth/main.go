@@ -13,8 +13,9 @@ import (
 	"github.com/Tbits007/auth/internal/app"
 	"github.com/Tbits007/auth/internal/config"
 	"github.com/Tbits007/auth/internal/lib/logger/sl"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
+	"github.com/go-redis/redis_rate/v10"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 const (
@@ -61,11 +62,14 @@ func main() {
 		ReadTimeout:  cfg.Redis.Timeout,
 		WriteTimeout: cfg.Redis.Timeout,
 	})	
+	
+	rateLimit := redis_rate.NewLimiter(rdb)
 
 	application := app.NewApp(
 		log,
 		db,
 		rdb,
+		rateLimit,
 		cfg.Auth.SecretKey,
 		cfg.GRPCServer.Port,
 		cfg.Auth.TokenTTL,
