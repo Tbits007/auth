@@ -29,7 +29,7 @@ func (u *EventRepo) Save(
 	const op = "postgres.eventRepo.Save"
 
 	query := `
-	INSERT INTO events (event_type, payload, status)
+	INSERT INTO outbox (event_type, payload, status)
 	VALUES ($1, $2, $3)
 	RETURNING id
 	`

@@ -5,12 +5,18 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"net/http"
+	"sync"
 
 	"github.com/Tbits007/auth/internal/handlers/grpc/auth"
 	"github.com/Tbits007/auth/internal/lib/logger/sl"
-    "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/ratelimit"
+	grpcprom "github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/ratelimit"
+
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -23,16 +29,20 @@ func InterceptorLogger(l *slog.Logger) logging.Logger {
 }
 
 type GRPCApp struct {
-    log        *slog.Logger
-    gRPCServer *grpc.Server
-    port       int 
+    log             *slog.Logger
+    gRPCServer      *grpc.Server
+    metricsServer   *http.Server
+    reg             *prometheus.Registry
+    port             int 
 } 
 
 func NewGRPCApp(
-    log *slog.Logger, 
-    rateLimiter ratelimit.Limiter, 
-    authService auth.AuthService, 
-    port int,
+    log           *slog.Logger, 
+    rateLimiter    ratelimit.Limiter, 
+    authService    auth.AuthService,
+    metricsServer *http.Server,
+    reg           *prometheus.Registry,
+    port           int,
 ) *GRPCApp {
     loggingOpts := []logging.Option{
         logging.WithLogOnEvents(
@@ -47,18 +57,30 @@ func NewGRPCApp(
         }),
     }
 
+    srvMetrics := grpcprom.NewServerMetrics(
+		grpcprom.WithServerHandlingTimeHistogram(
+			grpcprom.WithHistogramBuckets([]float64{0.001, 0.01, 0.1, 0.3, 0.6, 1, 3, 6, 9, 20, 30, 60, 90, 120}),
+		),        
+    )
+	reg.MustRegister(
+        srvMetrics,
+    )
+
     gRPCServer := grpc.NewServer(grpc.ChainUnaryInterceptor(
+        srvMetrics.UnaryServerInterceptor(),
         logging.UnaryServerInterceptor(InterceptorLogger(log), loggingOpts...),
         recovery.UnaryServerInterceptor(recoveryOpts...),   
-        ratelimit.UnaryServerInterceptor(rateLimiter),  
+        // ratelimit.UnaryServerInterceptor(rateLimiter),  # depends on Redis
     ))
 
     auth.NewAuthServer(gRPCServer, authService)
 
     return &GRPCApp{
-        log:        log,
-        gRPCServer: gRPCServer,
-        port:       port,
+        log:           log,
+        gRPCServer:    gRPCServer,
+        metricsServer: metricsServer,
+        reg:           reg,
+        port:          port,
     }    
 }
 
@@ -78,6 +100,21 @@ func (ga *GRPCApp) Run() error {
         return fmt.Errorf("%s: %w", op, err)
     }
 
+    go func() {
+		m := http.NewServeMux()
+		m.Handle("/metrics", promhttp.HandlerFor(
+			ga.reg,
+			promhttp.HandlerOpts{
+				EnableOpenMetrics: true,
+			},
+		))
+		ga.metricsServer.Handler = m
+		ga.log.Info("starting HTTP server for prometheus")
+		if err := ga.metricsServer.ListenAndServe(); err != nil {
+            ga.log.Error("failed to start HTTP server for prometheus", sl.Err(err))
+        }
+    }()
+
     ga.log.Info("grpc server starting", slog.String("addr", l.Addr().String()))
 
     if err := ga.gRPCServer.Serve(l); err != nil {
@@ -95,9 +132,24 @@ func (ga *GRPCApp) Stop(shutdownCtx context.Context) {
 
     done := make(chan struct{})
 
+    var wg *sync.WaitGroup
+    wg.Add(2)
+
     go func() {
-        defer close(done)
+        defer wg.Done()
         ga.gRPCServer.GracefulStop()
+    }()
+
+    go func () {
+        defer wg.Done()
+        if err := ga.metricsServer.Shutdown(shutdownCtx); err != nil {
+			ga.log.Error("failed to stop web server", sl.Err(err))
+		}
+    }()
+
+    go func() {
+        wg.Wait()
+        close(done)
     }()
 
     select {

@@ -20,7 +20,7 @@ func NewToken(
     claims["email"] = user.Email  
     claims["exp"] = time.Now().Add(duration).Unix()   
 
-    tokenString, err := token.SignedString(secretKey)  
+    tokenString, err := token.SignedString([]byte(secretKey))  
     if err != nil {  
        return "", err  
     }  

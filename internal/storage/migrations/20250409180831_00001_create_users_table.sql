@@ -12,7 +12,6 @@ CREATE TABLE users (
 
 CREATE TABLE outbox (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    aggregate_id UUID NOT NULL,
     event_type VARCHAR(100) NOT NULL, 
     payload JSONB NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'pending'::outbox_status

@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"errors"
-
 	"github.com/Tbits007/auth/internal/services/auth"
 	"github.com/Tbits007/auth/internal/storage"
 	au "github.com/Tbits007/contract/gen/go/auth"

@@ -2,6 +2,7 @@ package app
 
 import (
 	"log/slog"
+	"net/http"
 	"time"
 
 	"github.com/Tbits007/auth/internal/app/grpcapp"
@@ -11,6 +12,7 @@ import (
 	"github.com/Tbits007/auth/internal/storage/redis_"
 	"github.com/go-redis/redis_rate/v10"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -19,13 +21,15 @@ type App struct {
 }
 
 func NewApp(
-	log 	  *slog.Logger,
-	db 		  *pgxpool.Pool,
-	rdb		  *redis.Client,
-	rateLimit *redis_rate.Limiter,
-	secretKey  string,
-	grpcPort   int,
-	tokenTTL   time.Duration,
+	log 	  		*slog.Logger,
+	db 		  		*pgxpool.Pool,
+	rdb		  		*redis.Client,
+	rateLimit 		*redis_rate.Limiter,
+	secretKey  		 string,
+	grpcPort   		 int,
+	tokenTTL   		 time.Duration,
+	metricsServer	*http.Server,
+	reg				*prometheus.Registry,
 ) *App {
 
 	txManager := postgres.NewTxManager(db)
@@ -47,6 +51,8 @@ func NewApp(
 		log,
 		rateLimiter,
 		authService,
+        metricsServer,
+        reg,
 		grpcPort,
 	)
 
