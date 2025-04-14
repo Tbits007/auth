@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
@@ -13,9 +14,10 @@ import (
 	"github.com/Tbits007/auth/internal/app"
 	"github.com/Tbits007/auth/internal/config"
 	"github.com/Tbits007/auth/internal/lib/logger/sl"
-	"github.com/redis/go-redis/v9"
 	"github.com/go-redis/redis_rate/v10"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/redis/go-redis/v9"
 )
 
 const (
@@ -65,6 +67,9 @@ func main() {
 	
 	rateLimit := redis_rate.NewLimiter(rdb)
 
+	metricsServer := &http.Server{Addr: ":8081"}
+	reg := prometheus.NewRegistry()	
+
 	application := app.NewApp(
 		log,
 		db,
@@ -73,6 +78,8 @@ func main() {
 		cfg.Auth.SecretKey,
 		cfg.GRPCServer.Port,
 		cfg.Auth.TokenTTL,
+		metricsServer,
+		reg,
 	)
 
 	application.GRPCServer.MustRun()
