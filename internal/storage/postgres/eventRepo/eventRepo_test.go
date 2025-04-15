@@ -2,45 +2,27 @@ package eventRepo
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"os"
 	"testing"
-	"time"
 
-	"github.com/Tbits007/auth/internal/config"
 	"github.com/Tbits007/auth/internal/domain/models/eventModel"
+	"github.com/Tbits007/auth/internal/storage/postgres/testutils"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-var testDB *pgxpool.Pool
+var (
+    testDB *pgxpool.Pool
+)
 
 func TestMain(m *testing.M) {
-	cfg := config.MustLoad()
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+    testDB = testutils.GetTestDB()
+    defer testDB.Close()
 
-	connString := fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
-		cfg.Postgres.User,
-		cfg.Postgres.Password,
-		cfg.Postgres.Host,
-		cfg.Postgres.Port,
-		cfg.Postgres.DBName,
-	)
-
-	pool, err := pgxpool.New(ctx, connString)
-	if err != nil {
-		log.Fatalf("init new pool: %v", err)
-	}
-
-	testDB = pool
-
-	code := m.Run()
-	os.Exit(code)
+    code := m.Run()
+    os.Exit(code)
 }
 
 func TestSave_Success(t *testing.T) {
