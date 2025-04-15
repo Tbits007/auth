@@ -1,4 +1,4 @@
-package postgres
+package eventRepo
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/Tbits007/auth/internal/domain/models/eventModel"
+	"github.com/Tbits007/auth/internal/storage/postgres/txManager"
 	"github.com/Tbits007/auth/internal/storage"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -37,7 +38,7 @@ func (u *EventRepo) Save(
 	var id uuid.UUID
     var err error
 
-    querier := GetQuerier(ctx, u.db)
+    querier := txManager.GetQuerier(ctx, u.db)
 
     err = querier.QueryRow(ctx, query,
         Event.EventType,

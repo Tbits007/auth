@@ -3,8 +3,11 @@ package config
 import (
 	"log"
 	"os"
+	"path/filepath"
 	"time"
+
 	"github.com/ilyakaznacheev/cleanenv"
+	"github.com/joho/godotenv"
 )
 
 
@@ -44,6 +47,13 @@ type Redis struct {
 }
 
 func MustLoad() *Config {
+	projectRoot := getProjectRoot()
+	envPath := filepath.Join(projectRoot, ".env")
+
+	if err := godotenv.Load(envPath); err != nil {
+		log.Fatalf("Warning: Couldn't load .env file: %v", err)
+	}
+
     configPath := os.Getenv("CONFIG_PATH")
     if configPath == "" {
         log.Fatal("CONFIG_PATH environment variable is not set")
@@ -61,4 +71,9 @@ func MustLoad() *Config {
     }
 
     return &cfg
+}
+
+func getProjectRoot() string {
+	wd, _ := os.Getwd()
+	return filepath.Join(wd, "../../../../")
 }

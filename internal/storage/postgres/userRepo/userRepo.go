@@ -1,4 +1,4 @@
-package postgres
+package userRepo
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/Tbits007/auth/internal/domain/models/userModel"
+    "github.com/Tbits007/auth/internal/storage/postgres/txManager"
 	"github.com/Tbits007/auth/internal/storage"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -38,7 +39,7 @@ func (u *UserRepo) Save(
 	var id uuid.UUID
     var err error
 
-    querier := GetQuerier(ctx, u.db)
+    querier := txManager.GetQuerier(ctx, u.db)
 
     err = querier.QueryRow(ctx, query,
         user.Email,
@@ -71,7 +72,7 @@ func (u *UserRepo) GetByEmail(
 	`
 
     var user userModel.User
-    querier := GetQuerier(ctx, u.db)
+    querier := txManager.GetQuerier(ctx, u.db)
     err := querier.QueryRow(ctx, query, email).Scan(
         &user.Email,
         &user.HashedPassword,
@@ -102,7 +103,7 @@ func (u *UserRepo) IsAdmin(
 	`
 
     var isAdmin bool
-    querier := GetQuerier(ctx, u.db)
+    querier := txManager.GetQuerier(ctx, u.db)
     err := querier.QueryRow(ctx, query, userID).Scan(
         &isAdmin,
     )

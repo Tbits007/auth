@@ -8,7 +8,9 @@ import (
 	"github.com/Tbits007/auth/internal/app/grpcapp"
 	"github.com/Tbits007/auth/internal/lib/ratelimiter"
 	"github.com/Tbits007/auth/internal/services/auth"
-	"github.com/Tbits007/auth/internal/storage/postgres"
+	"github.com/Tbits007/auth/internal/storage/postgres/txManager"
+	"github.com/Tbits007/auth/internal/storage/postgres/userRepo"
+	"github.com/Tbits007/auth/internal/storage/postgres/eventRepo"
 	"github.com/Tbits007/auth/internal/storage/redis_"
 	"github.com/go-redis/redis_rate/v10"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -32,9 +34,9 @@ func NewApp(
 	reg				*prometheus.Registry,
 ) *App {
 
-	txManager := postgres.NewTxManager(db)
-	userRepo := postgres.NewUserRepo(db)
-	eventRepo := postgres.NewEventRepo(db)
+	txManager := txManager.NewTxManager(db)
+	userRepo := userRepo.NewUserRepo(db)
+	eventRepo := eventRepo.NewEventRepo(db)
 	cacheRepo := redis_.NewCacheRepo(rdb)
 	rateLimiter := ratelimiter.NewLimiter(rateLimit)
 	authService := auth.NewAuthService(
