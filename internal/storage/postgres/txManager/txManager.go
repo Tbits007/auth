@@ -18,12 +18,12 @@ type Querier interface{
 }
 
 func GetQuerier(ctx context.Context, db *pgxpool.Pool) Querier {
-	if tx, ok := ctx.Value(ctxTxKey{}).(pgx.Tx); ok {
+	if tx, ok := GetTx(ctx); ok {
 		return tx
 	}
 	return db
-	
 }
+
 type TxManager struct {
 	db *pgxpool.Pool
 }
@@ -38,11 +38,11 @@ func (tm *TxManager) WithTransaction(ctx context.Context, fn func(ctx context.Co
 		return fmt.Errorf("begin transaction: %w", err)
 	}
 
-	defer func() {
-		if err != nil {
-			tx.Rollback(ctx)
-		}
-	}()
+    defer func() {
+        if err != nil {
+            _ = tx.Rollback(ctx)
+        }
+    }()
 
 	ctx = context.WithValue(ctx, ctxTxKey{}, tx)
 
@@ -53,7 +53,7 @@ func (tm *TxManager) WithTransaction(ctx context.Context, fn func(ctx context.Co
 	return tx.Commit(ctx)
 }
 
-func (tm *TxManager) GetTx(ctx context.Context) (pgx.Tx, bool) {
+func GetTx(ctx context.Context) (pgx.Tx, bool) {
 	tx, ok := ctx.Value(ctxTxKey{}).(pgx.Tx)
 	return tx, ok
 }
