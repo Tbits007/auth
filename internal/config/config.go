@@ -38,8 +38,6 @@ type Postgres struct {
 
 type Redis struct {
 	Address     string        `yaml:"address"`
-	Password    string        `yaml:"password"`
-	User        string        `yaml:"user"`
 	DB          int           `yaml:"db"`
 	MaxRetries  int           `yaml:"max_retries"`
 	DialTimeout time.Duration `yaml:"dial_timeout"`
@@ -74,6 +72,19 @@ func MustLoad() *Config {
 }
 
 func getProjectRoot() string {
-	wd, _ := os.Getwd()
-	return filepath.Join(wd, "../../../../")
+    paths := []string{
+        ".env",
+        "../.env",
+        "../../.env",
+        "../../../.env",
+    }
+    
+    for _, path := range paths {
+        if _, err := os.Stat(path); err == nil {
+            absPath, _ := filepath.Abs(path)
+            return filepath.Dir(absPath)
+        }
+    }
+    
+    return "" 
 }

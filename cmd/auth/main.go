@@ -56,9 +56,7 @@ func main() {
 
 	rdb := redis.NewClient(&redis.Options{
 		Addr:         cfg.Redis.Address,
-		Password:     cfg.Redis.Address,
 		DB:           cfg.Redis.DB,
-		Username:     cfg.Redis.User,
 		MaxRetries:   cfg.Redis.MaxRetries,
 		DialTimeout:  cfg.Redis.DialTimeout,
 		ReadTimeout:  cfg.Redis.Timeout,

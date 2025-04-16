@@ -26,6 +26,10 @@ func TestMain(m *testing.M) {
 }
 
 func TestWithTransaction_Commit(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+
     ctx := context.Background()
     tm := NewTxManager(testDB)
 
@@ -42,6 +46,10 @@ func TestWithTransaction_Commit(t *testing.T) {
 }
 
 func TestWithTransaction_Rollback(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+    
     ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
     defer cancel()
 
