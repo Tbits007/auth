@@ -113,7 +113,7 @@ func (au *AuthService) Register(
 		passHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 		if err != nil {
 			log.Error("failed to generate password hash", sl.Err(err))
-			return uuid.Nil, fmt.Errorf("%s: %w", op, err)
+			return uuid.Nil, fmt.Errorf("%s: generate password hash:%w", op, err)
 		}
 		
 		user := userModel.User{
@@ -151,6 +151,7 @@ func (au *AuthService) Register(
 			}
 			return nil 
 		})
+
 		if err != nil {
 			log.Error("transaction failed", sl.Err(err))
 			return uuid.Nil, fmt.Errorf("%s: %w", op, err)

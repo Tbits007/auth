@@ -1,0 +1,19 @@
+with-expecter: true
+resolve-type-alias: False
+quiet: False
+issue-845-fix: True
+disable-version-string: True
+
+filename: "mock_{{.InterfaceName}}.go"
+dir: "{{.InterfaceDir}}"
+mockname: "Mock{{.InterfaceName}}"
+outpkg: "{{.PackageName}}"
+inpackage: True
+
+packages:
+    github.com/Tbits007/auth/internal/services/auth:
+        interfaces:
+            UserRepo:
+            EventRepo:
+            TxManager:
+            CacheRepo:
