@@ -8,16 +8,12 @@ import (
 
 	"github.com/Tbits007/auth/internal/domain/models/eventModel"
 	"github.com/Tbits007/auth/internal/domain/models/userModel"
-	"github.com/Tbits007/auth/internal/lib/logger/slogdiscard"
+	"github.com/Tbits007/auth/internal/services/testutils"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/bcrypt"
-)
-
-var (
-	log = slogdiscard.NewDiscardLogger()
 )
 
 func TestRegister_Success(t *testing.T) {
@@ -54,7 +50,7 @@ func TestRegister_Success(t *testing.T) {
 
 
     service := NewAuthService(
-        log,
+        testutils.Log,
         mockTxManager,
         mockUserRepo,
         mockEventRepo,
@@ -85,7 +81,7 @@ func TestRegister_TransactionError(t *testing.T) {
 		Return(expectedErr)
 
 	service := NewAuthService(
-		log,
+		testutils.Log,
 		mockTxManager,
 		mockUserRepo,
 		mockEventRepo,
@@ -129,7 +125,7 @@ func TestRegister_UserSaveError(t *testing.T) {
 		Return(uuid.Nil, expectedErr)
 
 	service := NewAuthService(
-		log,
+		testutils.Log,
 		mockTxManager,
 		mockUserRepo,
 		mockEventRepo,
