@@ -7,11 +7,13 @@ disable-version-string: True
 filename: "mock_{{.InterfaceName}}.go"
 dir: "{{.InterfaceDir}}"
 mockname: "Mock{{.InterfaceName}}"
-outpkg: "{{.PackageName}}"
+outpkg: "mocks"
 inpackage: True
 
 packages:
     github.com/Tbits007/auth/internal/services/auth:
+        config:
+            dir: "./internal/services/auth/tests/mocks"
         interfaces:
             UserRepo:
             EventRepo:

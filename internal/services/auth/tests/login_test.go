@@ -1,4 +1,4 @@
-package auth
+package tests
 
 import (
 	"context"
@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/Tbits007/auth/internal/domain/models/userModel"
+	"github.com/Tbits007/auth/internal/services/auth"
+	"github.com/Tbits007/auth/internal/services/auth/tests/mocks"
 	"github.com/Tbits007/auth/internal/services/testutils"
 	"github.com/Tbits007/auth/internal/storage"
 	"github.com/google/uuid"
@@ -23,16 +25,16 @@ func TestLogin_CacheHit(t *testing.T) {
 	testPassword := "password123"
 	expectedToken := "cached_token"
 
-	mockTxManager := NewMockTxManager(t)
-	mockUserRepo := NewMockUserRepo(t)
-	mockEventRepo := NewMockEventRepo(t)
-	mockCacheRepo := NewMockCacheRepo(t)
+	mockTxManager := mocks.NewMockTxManager(t)
+	mockUserRepo := mocks.NewMockUserRepo(t)
+	mockEventRepo := mocks.NewMockEventRepo(t)
+	mockCacheRepo := mocks.NewMockCacheRepo(t)
 
 	mockCacheRepo.EXPECT().
 		Get(ctx, testEmail).
 		Return(expectedToken, nil)
 
-	service := NewAuthService(
+	service := auth.NewAuthService(
 		testutils.Log,
 		mockTxManager,
 		mockUserRepo,
@@ -57,10 +59,10 @@ func TestLogin_UserNotFound(t *testing.T) {
 	testPassword := "password123"
 	expectedErr := storage.ErrUserNotFound
 
-	mockTxManager := NewMockTxManager(t)
-	mockUserRepo := NewMockUserRepo(t)
-	mockEventRepo := NewMockEventRepo(t)
-	mockCacheRepo := NewMockCacheRepo(t)
+	mockTxManager := mocks.NewMockTxManager(t)
+	mockUserRepo := mocks.NewMockUserRepo(t)
+	mockEventRepo := mocks.NewMockEventRepo(t)
+	mockCacheRepo := mocks.NewMockCacheRepo(t)
 
 	mockCacheRepo.EXPECT().
 		Get(ctx, testEmail).
@@ -70,7 +72,7 @@ func TestLogin_UserNotFound(t *testing.T) {
 		GetByEmail(ctx, testEmail).
 		Return(nil, expectedErr)
 
-	service := NewAuthService(
+	service := auth.NewAuthService(
 		testutils.Log,
 		mockTxManager,
 		mockUserRepo,
@@ -84,7 +86,7 @@ func TestLogin_UserNotFound(t *testing.T) {
 
 	require.Error(t, err)
 	assert.Empty(t, token)
-	assert.ErrorIs(t, err, ErrInvalidCredentials)
+	assert.ErrorIs(t, err, auth.ErrInvalidCredentials)
 
 	mockEventRepo.AssertNotCalled(t, "Save")
 }
@@ -99,10 +101,10 @@ func TestLogin_InvalidCredentials(t *testing.T) {
 		HashedPassword: string(hashedPassword),
 	}
 
-	mockTxManager := NewMockTxManager(t)
-	mockUserRepo := NewMockUserRepo(t)
-	mockEventRepo := NewMockEventRepo(t)
-	mockCacheRepo := NewMockCacheRepo(t)
+	mockTxManager := mocks.NewMockTxManager(t)
+	mockUserRepo := mocks.NewMockUserRepo(t)
+	mockEventRepo := mocks.NewMockEventRepo(t)
+	mockCacheRepo := mocks.NewMockCacheRepo(t)
 
 	mockCacheRepo.EXPECT().
 		Get(ctx, testEmail).
@@ -112,7 +114,7 @@ func TestLogin_InvalidCredentials(t *testing.T) {
 		GetByEmail(ctx, testEmail).
 		Return(&user, nil)
 
-	service := NewAuthService(
+	service := auth.NewAuthService(
 		testutils.Log,
 		mockTxManager,
 		mockUserRepo,
@@ -126,7 +128,7 @@ func TestLogin_InvalidCredentials(t *testing.T) {
 
 	require.Error(t, err)
 	assert.Empty(t, token)
-	assert.ErrorIs(t, err, ErrInvalidCredentials)
+	assert.ErrorIs(t, err, auth.ErrInvalidCredentials)
 
 	mockEventRepo.AssertNotCalled(t, "Save")
 }
@@ -137,10 +139,10 @@ func TestLogin_UserRepoError(t *testing.T) {
 	testPassword := "password123"
 	expectedErr := errors.New("user repo error")
 
-	mockTxManager := NewMockTxManager(t)
-	mockUserRepo := NewMockUserRepo(t)
-	mockEventRepo := NewMockEventRepo(t)
-	mockCacheRepo := NewMockCacheRepo(t)
+	mockTxManager := mocks.NewMockTxManager(t)
+	mockUserRepo := mocks.NewMockUserRepo(t)
+	mockEventRepo := mocks.NewMockEventRepo(t)
+	mockCacheRepo := mocks.NewMockCacheRepo(t)
 
 	mockCacheRepo.EXPECT().
 		Get(ctx, testEmail).
@@ -150,7 +152,7 @@ func TestLogin_UserRepoError(t *testing.T) {
 		GetByEmail(ctx, testEmail).
 		Return(nil, expectedErr)
 
-	service := NewAuthService(
+	service := auth.NewAuthService(
 		testutils.Log,
 		mockTxManager,
 		mockUserRepo,
@@ -180,10 +182,10 @@ func TestLogin_Success(t *testing.T) {
 		HashedPassword: string(hashedPassword),
 	}
 
-	mockTxManager := NewMockTxManager(t)
-	mockUserRepo := NewMockUserRepo(t)
-	mockEventRepo := NewMockEventRepo(t)
-	mockCacheRepo := NewMockCacheRepo(t)
+	mockTxManager := mocks.NewMockTxManager(t)
+	mockUserRepo := mocks.NewMockUserRepo(t)
+	mockEventRepo := mocks.NewMockEventRepo(t)
+	mockCacheRepo := mocks.NewMockCacheRepo(t)
 
 	mockCacheRepo.EXPECT().
 		Get(ctx, testEmail).
@@ -201,7 +203,7 @@ func TestLogin_Success(t *testing.T) {
 		Set(ctx, testEmail, mock.AnythingOfType("string"), time.Hour).
 		Return(nil)
 
-	service := NewAuthService(
+	service := auth.NewAuthService(
 		testutils.Log,
 		mockTxManager,
 		mockUserRepo,
@@ -229,10 +231,10 @@ func TestLogin_EventSaveError(t *testing.T) {
 	}
 	expectedErr := errors.New("event save error")
 
-	mockTxManager := NewMockTxManager(t)
-	mockUserRepo := NewMockUserRepo(t)
-	mockEventRepo := NewMockEventRepo(t)
-	mockCacheRepo := NewMockCacheRepo(t)
+	mockTxManager := mocks.NewMockTxManager(t)
+	mockUserRepo := mocks.NewMockUserRepo(t)
+	mockEventRepo := mocks.NewMockEventRepo(t)
+	mockCacheRepo := mocks.NewMockCacheRepo(t)
 
 	mockCacheRepo.EXPECT().
 		Get(ctx, testEmail).
@@ -250,7 +252,7 @@ func TestLogin_EventSaveError(t *testing.T) {
 		Set(ctx, testEmail, mock.AnythingOfType("string"), time.Hour).
 		Return(nil)
 
-	service := NewAuthService(
+	service := auth.NewAuthService(
 		testutils.Log,
 		mockTxManager,
 		mockUserRepo,
@@ -278,10 +280,10 @@ func TestLogin_CacheSetError(t *testing.T) {
 	}
 	cacheErr := errors.New("cache set error")
 
-	mockTxManager := NewMockTxManager(t)
-	mockUserRepo := NewMockUserRepo(t)
-	mockEventRepo := NewMockEventRepo(t)
-	mockCacheRepo := NewMockCacheRepo(t)
+	mockTxManager := mocks.NewMockTxManager(t)
+	mockUserRepo := mocks.NewMockUserRepo(t)
+	mockEventRepo := mocks.NewMockEventRepo(t)
+	mockCacheRepo := mocks.NewMockCacheRepo(t)
 
 	mockCacheRepo.EXPECT().
 		Get(ctx, testEmail).
@@ -299,7 +301,7 @@ func TestLogin_CacheSetError(t *testing.T) {
 		Set(ctx, testEmail, mock.AnythingOfType("string"), time.Hour).
 		Return(cacheErr)
 
-	service := NewAuthService(
+	service := auth.NewAuthService(
 		testutils.Log,
 		mockTxManager,
 		mockUserRepo,

@@ -1,4 +1,4 @@
-package auth
+package tests
 
 import (
 	"context"
@@ -8,6 +8,8 @@ import (
 
 	"github.com/Tbits007/auth/internal/domain/models/eventModel"
 	"github.com/Tbits007/auth/internal/domain/models/userModel"
+	"github.com/Tbits007/auth/internal/services/auth"
+	"github.com/Tbits007/auth/internal/services/auth/tests/mocks"
 	"github.com/Tbits007/auth/internal/services/testutils"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -22,10 +24,10 @@ func TestRegister_Success(t *testing.T) {
     testPassword := "password123"
 	testUserID := uuid.New()
 
-    mockTxManager := NewMockTxManager(t)
-    mockUserRepo := NewMockUserRepo(t)
-    mockEventRepo := NewMockEventRepo(t)
-    mockCacheRepo := NewMockCacheRepo(t)
+    mockTxManager := mocks.NewMockTxManager(t)
+    mockUserRepo := mocks.NewMockUserRepo(t)
+    mockEventRepo := mocks.NewMockEventRepo(t)
+    mockCacheRepo := mocks.NewMockCacheRepo(t)
 
     mockTxManager.EXPECT().
         WithTransaction(ctx, mock.AnythingOfType("func(context.Context) error")).
@@ -49,7 +51,7 @@ func TestRegister_Success(t *testing.T) {
         Return(uuid.New(), nil)
 
 
-    service := NewAuthService(
+    service := auth.NewAuthService(
         testutils.Log,
         mockTxManager,
         mockUserRepo,
@@ -71,16 +73,16 @@ func TestRegister_TransactionError(t *testing.T) {
 	testPassword := "password123"
 	expectedErr := errors.New("transaction error")
 
-	mockTxManager := NewMockTxManager(t)
-	mockUserRepo := NewMockUserRepo(t)
-	mockEventRepo := NewMockEventRepo(t)
-	mockCacheRepo := NewMockCacheRepo(t)
+	mockTxManager := mocks.NewMockTxManager(t)
+	mockUserRepo := mocks.NewMockUserRepo(t)
+	mockEventRepo := mocks.NewMockEventRepo(t)
+	mockCacheRepo := mocks.NewMockCacheRepo(t)
 
 	mockTxManager.EXPECT().
 		WithTransaction(ctx, mock.AnythingOfType("func(context.Context) error")).
 		Return(expectedErr)
 
-	service := NewAuthService(
+	service := auth.NewAuthService(
 		testutils.Log,
 		mockTxManager,
 		mockUserRepo,
@@ -107,10 +109,10 @@ func TestRegister_UserSaveError(t *testing.T) {
 	testPassword := "password123"
 	expectedErr := errors.New("user save error")
 
-	mockTxManager := NewMockTxManager(t)
-	mockUserRepo := NewMockUserRepo(t)
-	mockEventRepo := NewMockEventRepo(t)
-	mockCacheRepo := NewMockCacheRepo(t)
+	mockTxManager := mocks.NewMockTxManager(t)
+	mockUserRepo := mocks.NewMockUserRepo(t)
+	mockEventRepo := mocks.NewMockEventRepo(t)
+	mockCacheRepo := mocks.NewMockCacheRepo(t)
 
 	mockTxManager.EXPECT().
 		WithTransaction(ctx, mock.AnythingOfType("func(context.Context) error")).
@@ -124,7 +126,7 @@ func TestRegister_UserSaveError(t *testing.T) {
 		Save(ctx, mock.AnythingOfType("userModel.User")).
 		Return(uuid.Nil, expectedErr)
 
-	service := NewAuthService(
+	service := auth.NewAuthService(
 		testutils.Log,
 		mockTxManager,
 		mockUserRepo,
