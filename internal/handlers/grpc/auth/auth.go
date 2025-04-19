@@ -112,7 +112,7 @@ func (as *AuthServer) IsAdmin(
 
 	isAdmin, err := as.authService.IsAdmin(ctx, userID)
 	if err != nil {
-		if errors.Is(err, storage.ErrUserNotFound) {
+		if errors.Is(err, auth.ErrInvalidCredentials) {
 			return nil, status.Error(codes.NotFound, "user not found")
 		}
 

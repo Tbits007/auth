@@ -171,14 +171,6 @@ func (au *AuthService) Login(
         slog.String("op", op),
     )
 
-	token, err := au.cacheRepo.Get(ctx, email)
-	if err != nil {
-		log.Debug("cache miss", sl.Err(err))
-	} else {
-		log.Debug("cache hit")
-		return token, nil
-	}
-
 	user, err := au.userRepo.GetByEmail(ctx, email)
 	if err != nil {
 		if errors.Is(err, storage.ErrUserNotFound) {
@@ -193,6 +185,14 @@ func (au *AuthService) Login(
         log.Info("invalid credentials", sl.Err(err))
         return "", fmt.Errorf("%s: %w", op, ErrInvalidCredentials)
     }	
+
+	token, err := au.cacheRepo.Get(ctx, email)
+	if err != nil {
+		log.Debug("cache miss", sl.Err(err))
+	} else {
+		log.Debug("cache hit")
+		return token, nil
+	}
 
     token, err = jwt.NewToken(*user, au.tokenTTL, au.secretKey)
     if err != nil {
